@@ -1,0 +1,13 @@
+﻿*.docx
+*.pdf
+*.xlsx
+*.asv
+*.zip
+/output/
+*.mat
+*.log
+/venv/
+**/.idea/
+*.json
+**/__pycache__/
+**/*test*.*
