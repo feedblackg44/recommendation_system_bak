@@ -1,14 +1,9 @@
 function [min_budget, max_budget, order_json, lb, ub, check_ub, deals_variants_all] = Precalculation(order_json, max_investment_period)
-    order = JsonToMap(order_json);
 
-    order_keys = order.keys;
-    for i = 1:length(order_keys)
-        deal = order(order_keys{i});
-        deal_v = deal.values;
-        for j = 1:length(deal_v)
-            item = deal_v{j};
-            item('Deal') = deal;
-        end
+    if ischar(order_json) || isstring(order_json)
+        order = OrderToMap(order_json);
+    else
+        order = order_json;
     end
 
     min_moqs = PrepareMinMOQs(order);

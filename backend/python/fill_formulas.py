@@ -1,5 +1,4 @@
 import argparse
-from tkinter.filedialog import askopenfilename
 
 import xlwings as xw
 
@@ -175,6 +174,8 @@ def main(filename=None):
     book.close()
     if len(app.books) == 0:
         app.quit()
+
+    print('Formulas filled successfully')
 
 
 if __name__ == '__main__':

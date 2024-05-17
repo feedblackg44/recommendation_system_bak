@@ -1,5 +1,5 @@
 import sys
-import tkinter as tk
+import customtkinter as ctk
 
 
 class ConsoleRedirector:
@@ -9,8 +9,8 @@ class ConsoleRedirector:
             self.console = sys.stdout
 
         def write(self, message):
-            self.text_widget.insert(tk.END, message)
-            self.text_widget.see(tk.END)
+            self.text_widget.insert(ctk.END, message)
+            self.text_widget.see(ctk.END)
             self.console.write(message)
 
         def flush(self):

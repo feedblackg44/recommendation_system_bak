@@ -26,7 +26,8 @@ class CustomJSONEncoder(json.JSONEncoder):
 
 
 class GeneticAlgorithm:
-    def __init__(self, config_path):
+    def __init__(self, config_path, host=None, port=None):
+        self._lb = None
         self._data_table = None
         self._single = None
         self._solution = None
@@ -35,6 +36,9 @@ class GeneticAlgorithm:
         self._max_budget = None
         self._min_budget = None
         self._num_cores = psutil.cpu_count(logical=False)
+
+        self._host = "" if not host else host
+        self._port = "" if not port else str(port)
 
         self._max_investment_period = None
         self.selected_file = None
@@ -47,7 +51,7 @@ class GeneticAlgorithm:
 
     @property
     def solutions_amount(self):
-        return len(self._solution['xbests'])
+        return len(self._solution.get('fbests', {}))
 
     @property
     def max_investment_period(self):
@@ -71,44 +75,117 @@ class GeneticAlgorithm:
                                                      self.max_investment_period)
         data_str = json.dumps(data, cls=CustomJSONEncoder)
 
-        min_budget, max_budget, data_str, *args = self._eng.Precalculation(data_str,
-                                                                           self.max_investment_period,
-                                                                           nargout=7)
+        min_budget, max_budget, data_str, lb, *args = self._eng.Precalculation(data_str,
+                                                                               self.max_investment_period,
+                                                                               nargout=7)
         self._min_budget = min_budget
         self._max_budget = max_budget
         self._data = json.loads(data_str)
+        self._lb = lb
         self._matlab_output = args
 
         return min_budget, max_budget
 
-    def run(self, max_budget, min_budget=0, step=0, single=True, budget_credit=False):
-        try:
-            self._single = single
-            self._start_par_pool()
-            time_start = datetime.now()
-            xbests, fbests, deals_variants, check_ub, data_str = self._eng.MainFunc(
-                float(min_budget),
-                float(max_budget),
-                float(step),
-                single,
+    def _matlab_main_func(self, matlab_map_order, budget, budget_credit,
+                          pop_multiplier, max_gen_multiplier, max_stall_gen_multiplier, *args):
+        xbest, fbest, total_budget, deals_variants, check_ub, order = self._eng.MainFunc(
+            float(budget),
+            budget_credit,
+            matlab_map_order,
+            self._lb,
+            *args,
+            self._host,
+            self._port,
+            pop_multiplier,
+            max_gen_multiplier,
+            max_stall_gen_multiplier,
+            nargout=6
+        )
+
+        return xbest, fbest, total_budget, deals_variants, check_ub, order
+
+    def _main_func(self, min_budget, max_budget, step, single, budget_credit,
+                   pop_multiplier, max_gen_multiplier, max_stall_gen_multiplier, *args):
+        matlab_map_order = self._eng.OrderToMap(json.dumps(self._data,
+                                                           cls=CustomJSONEncoder),
+                                                nargout=1)
+
+        xbests = {}
+        fbests = {}
+
+        self._start_par_pool()
+
+        if (single and len(self._lb)) or not len(self._lb):
+            print(f"Running for {max_budget}$...")
+
+            xbest, fbest, total_budget, deals_variants, check_ub, order = self._matlab_main_func(
+                matlab_map_order,
+                max_budget,
                 budget_credit,
-                json.dumps(self._data,
-                           cls=CustomJSONEncoder),
-                *self._matlab_output,
-                nargout=5
+                pop_multiplier,
+                max_gen_multiplier,
+                max_stall_gen_multiplier,
+                *args
             )
-            time_elapsed = datetime.now() - time_start
-            self._stop_par_pool()
-        except Exception as e:
-            return str(e)
+
+            xbest = [i for i in xbest[0]] if not isinstance(xbest, float) else [xbest]
+
+            xbests[total_budget] = xbest
+            fbests[total_budget] = -fbest
+        else:
+            print(f"Running for {min_budget}-{max_budget}$ with step={step}...")
+            deals_variants = None
+            check_ub = [[None]]
+            order = None
+            budget_range = list(np.arange(min_budget, max_budget, step))
+            budget_range.append(max_budget)
+            for budget in budget_range:
+                print(f"Running for {budget}$...")
+
+                xbest, fbest, total_budget, deals_variants, check_ub, order = self._matlab_main_func(
+                    matlab_map_order,
+                    budget,
+                    budget_credit,
+                    pop_multiplier,
+                    max_gen_multiplier,
+                    max_stall_gen_multiplier,
+                    *args
+                )
+
+                last_key = list(fbests.keys())[-1] if fbests else None
+                if not last_key or (last_key and fbests[last_key] != -fbest):
+                    xbest = [i for i in xbest[0]] if not isinstance(xbest, float) else [xbest]
+
+                    xbests[total_budget] = xbest
+                    fbests[total_budget] = -fbest
+                print(f"Finished for {budget}$ with Profit: {fbest}$")
+
+        self._stop_par_pool()
+
+        deals_variants = self._eng.MapToJson(deals_variants, nargout=1)
+        order = self._eng.MapToJson(order, nargout=1)
+        check_ub = [bool(i) for i in check_ub[0]] if not isinstance(check_ub, float) else [bool(check_ub)]
+
+        return xbests, fbests, deals_variants, check_ub, order
+
+    def run(self, max_budget, min_budget=0, step=0, single=True, budget_credit=False,
+            pop_multiplier=4, max_gen_multiplier=20, max_stall_gen_multiplier=3):
+        self._single = single
+        xbests, fbests, deals_variants, check_ub, data_str = self._main_func(
+            float(min_budget),
+            float(max_budget),
+            float(step),
+            single,
+            budget_credit,
+            pop_multiplier,
+            max_gen_multiplier,
+            max_stall_gen_multiplier,
+            *self._matlab_output
+        )
 
         self._data = json.loads(data_str)
 
-        xbests = json.loads(xbests)
-        fbests = json.loads(fbests)
         deals_variants = json.loads(deals_variants)
-
-        check_ub = [bool(i) for i in check_ub[0]] if not isinstance(check_ub, float) else [bool(check_ub)]
 
         self._solution = {
             'xbests': xbests,
@@ -116,8 +193,6 @@ class GeneticAlgorithm:
             'deals_variants': deals_variants,
             'check_ub': check_ub
         }
-
-        return "Time elapsed: " + str(time_elapsed)
 
     def save_solution(self, selected_dir, budget=None):
         xbests = self._solution['xbests']
@@ -145,10 +220,11 @@ class GeneticAlgorithm:
             for j, key in enumerate(self._data.keys()):
                 if check_ub[j]:
                     deal_vars = deals_variants_all[deals_variants_all_keys[k]]
-                    self._data[key] = deal_vars[f'x{xbest[k]}']
+                    self._data[key] = deal_vars[f'x{int(xbest[k])}']
                     k += 1
 
-            choosed_budget = float(choosed_budget.replace('x', ''))
+            choosed_budget = float(choosed_budget.replace('x', '')) if isinstance(choosed_budget, str) \
+                else choosed_budget
 
             table_out, second_table, third_table = map_to_table(self._data, fbest, self.max_investment_period)
 
@@ -158,11 +234,11 @@ class GeneticAlgorithm:
             lastSlashIndex = part1.rfind('\\')
             part1 = part1[lastSlashIndex + 1:]
 
-            correct_dir = os.path.join(selected_dir, str(part1), datetime.today().strftime('%d.%m.%Y'))
+            correct_dir = os.path.join(selected_dir, datetime.today().strftime('%d.%m.%Y'), str(part1))
             if not budget and len(fbests) > 1 and not self._single:
                 correct_dir = os.path.join(correct_dir,
                                            f"{self.max_investment_period} days "
-                                           f"{min_budget}-{max_budget}$")
+                                           f"{int(min_budget)}-{int(max_budget)}$")
 
             if not os.path.exists(correct_dir):
                 os.makedirs(correct_dir)
@@ -185,15 +261,21 @@ class GeneticAlgorithm:
         with open(config_path, 'r') as f:
             self._config = json.load(f)
 
-    def _make_matlab_config(self):
-        self._eng.cd(self._config['main_path'], nargout=0)
+    def _make_matlab_config(self, engine=None):
+        if not engine:
+            engine = self._eng
+        engine.cd(self._config['main_path'], nargout=0)
         for path in self._config['other_paths']:
-            self._eng.addpath(path, nargout=0)
+            engine.addpath(path, nargout=0)
 
-    def _start_par_pool(self, num_cores=None):
+    def _start_par_pool(self, engine=None, num_cores=None):
         if not num_cores:
             num_cores = self._num_cores
-        self._eng.eval(f"parpool({num_cores});", nargout=0)
+        if not engine:
+            engine = self._eng
+        engine.eval(f"parpool({num_cores});", nargout=0)
 
-    def _stop_par_pool(self):
-        self._eng.eval("delete(gcp('nocreate'));", nargout=0)
+    def _stop_par_pool(self, engine=None):
+        if not engine:
+            engine = self._eng
+        engine.eval("delete(gcp('nocreate'));", nargout=0)
