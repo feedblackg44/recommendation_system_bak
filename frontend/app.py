@@ -5,6 +5,8 @@ import customtkinter as ctk
 from tkinter.filedialog import askdirectory, askopenfilename
 
 from PIL import Image
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 from backend.python.genetic_algorithm import GeneticAlgorithm
 from frontend.api import Api
@@ -45,10 +47,66 @@ def format_number(num):
     if abs(num) > 999999 or (abs(num) < 0.00001 and num != 0):
         return f"{num:.3e}"
     elif abs(num) < 1:
-        amount_of_digits = len(str(num).split(".")[1])
+        amount_of_digits = min(len(str(num).split(".")[1]), 6)
         return f"{num:.{amount_of_digits}f}"
     else:
         return f"{num:.2f}"
+
+
+def create_graph_window(master, budgets, profits, allow_exit=False, draw_line=True):
+    window = ctk.CTkToplevel(master)
+    window.title("Budget vs Profit")
+
+    budgets = [int(budget) for budget in budgets]
+    profits = [int(profit) for profit in profits]
+
+    screen_width = window.winfo_screenwidth()
+    screen_height = window.winfo_screenheight()
+
+    width = int(screen_width * 0.95)
+    height = int(screen_height * 0.90)
+    x = (screen_width - width) // 2
+    y = (screen_height - height) // 2
+
+    window.geometry(f"{width}x{height}+{x}+{y}")
+
+    if not allow_exit:
+        window.protocol("WM_DELETE_WINDOW", lambda: None)
+
+    frame = ctk.CTkFrame(window)
+    frame.pack(fill="both", expand=True)
+
+    fig = Figure(figsize=(10, 6), dpi=100)
+    ax = fig.add_subplot(111)
+
+    if len(budgets) > 1 and draw_line:
+        for i in range(len(budgets) - 1):
+            color = 'red' if i % 2 == 0 else 'blue'
+            ax.plot(budgets[i:i + 2], profits[i:i + 2], 'o-', color=color)
+    else:
+        for i, (budget, profit) in enumerate(zip(budgets, profits)):
+            color = 'red' if i % 2 == 0 else 'blue'
+            ax.plot(budget, profit, 'o', color=color)
+
+    for i, (budget, profit) in enumerate(zip(budgets, profits)):
+        color = 'red' if i % 2 == 0 else 'blue'
+        if i % 2 == 0:
+            ax.annotate(f'B-{budget}\nP-{profit}', (budget, profit),
+                        textcoords="offset points", xytext=(-20, 5), ha='center', color=color)
+        else:
+            ax.annotate(f'B-{budget}\nP-{profit}', (budget, profit),
+                        textcoords="offset points", xytext=(25, -25), ha='center', color=color)
+
+    ax.set_xlabel("Budget")
+    ax.set_ylabel("Profit")
+    ax.set_title("Budget vs Profit")
+    ax.legend()
+
+    canvas = FigureCanvasTkAgg(fig, master=frame)
+    canvas.draw()
+    canvas.get_tk_widget().pack(fill="both", expand=True)
+
+    return window
 
 
 class App(ctk.CTk):
@@ -219,6 +277,11 @@ class App(ctk.CTk):
                                   justify="left", border_width=0, height=50)
         file_entry.pack(side="top", padx=25, pady=(5, 0), fill="x")
         file_entry.configure(state="readonly")
+        if self.selected_file_path:
+            file_entry.configure(state="normal")
+            file_entry.delete(0, "end")
+            file_entry.insert(0, self.selected_file_path)
+            file_entry.configure(state="readonly")
 
         file_button_frame = self.get_helpful_frame(pady=(10, 0))
         file_button = ctk.CTkButton(file_button_frame, text="Обрати файл", command=self.select_file,
@@ -557,9 +620,13 @@ class App(ctk.CTk):
                                         border_width=0, height=50)
             save_button.pack(side="top", padx=30, pady=(10, 25), fill="x")
 
+            graph_window = create_graph_window(self, self.ga.budgets, self.ga.profits)
+
+            self.third_page["budget_frame"] = budget_frame
             self.third_page["budget_label"] = budget_label
             self.third_page["budget_entry"] = budget_entry
             self.third_page["save_button"] = save_button
+            self.third_page["graph_window"] = graph_window
         else:
             save_button = ctk.CTkButton(self, text="Зберегти рішення",
                                         command=self.save_one_solution, fg_color=VIOLET_DARK,
@@ -581,9 +648,13 @@ class App(ctk.CTk):
             budget = None
 
         if selected_dir and self.ga:
-            self.ga.save_solution(selected_dir, budget)
-            self.show_dialog("Рішення збережено", "Рішення збережено\nуспішно",
-                             self.calculate_center_position(300, 100))
+            if budget and budget in self.ga.budgets:
+                self.ga.save_solution(selected_dir, budget)
+                self.show_dialog("Рішення збережено", "Рішення збережено\nуспішно",
+                                 self.calculate_center_position(300, 100))
+            else:
+                self.show_dialog("Помилка", "Введіть коректний\nбюджет",
+                                 self.calculate_center_position(300, 100))
 
     def save_all_solutions(self):
         selected_dir = askdirectory(
@@ -607,7 +678,10 @@ class App(ctk.CTk):
     def clear_window(self):
         for widget in self.winfo_children():
             if widget != self.header and widget not in self.header.winfo_children():
-                widget.pack_forget()
+                if not isinstance(widget, ctk.CTkToplevel):
+                    widget.pack_forget()
+                else:
+                    widget.destroy()
 
 
 if __name__ == "__main__":

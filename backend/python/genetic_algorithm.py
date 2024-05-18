@@ -65,6 +65,14 @@ class GeneticAlgorithm:
     def data(self):
         return self._data
 
+    @property
+    def budgets(self):
+        return list(self._solution.get('fbests', {}).keys())
+
+    @property
+    def profits(self):
+        return list(self._solution.get('fbests', {}).values())
+
     def precalculate(self, selected_file, max_investment_period):
         self.selected_file = selected_file
         self.max_investment_period = max_investment_period
@@ -101,6 +109,8 @@ class GeneticAlgorithm:
             max_stall_gen_multiplier,
             nargout=6
         )
+
+        total_budget = math.ceil(total_budget)
 
         return xbest, fbest, total_budget, deals_variants, check_ub, order
 
