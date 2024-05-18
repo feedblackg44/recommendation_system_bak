@@ -1,3 +1,4 @@
+import json
 import os
 import threading
 
@@ -110,7 +111,7 @@ def create_graph_window(master, budgets, profits, allow_exit=False, draw_line=Tr
 
 
 class App(ctk.CTk):
-    def __init__(self, cfg_path=None, host="localhost", port=5000):
+    def __init__(self, cfg_path=None, matlab_cfg_path=None, host="localhost", port=5000):
         super().__init__()
         self.alg_buffer = [""]
         self.forward_image_dark = None
@@ -146,18 +147,48 @@ class App(ctk.CTk):
 
         self.api = None
 
-        cfg_path = os.path.join(self.parent_path, "backend/config.json") if not cfg_path else cfg_path
-        self.ga = GeneticAlgorithm(cfg_path, host=self.host, port=self.port)
+        matlab_cfg_path = os.path.join(self.parent_path, "backend/config.json") \
+            if not matlab_cfg_path else matlab_cfg_path
+        self.ga = GeneticAlgorithm(matlab_cfg_path, host=self.host, port=self.port)
+
+        self.cfg_path = os.path.join(self.current_path, "config.json") if not cfg_path else cfg_path
         # self.ga = None
 
         self.pop_multiplier = 4
         self.max_gen_multiplier = 20
         self.max_stall_gen_multiplier = 3
 
+        self.update_config()
         self.init_header()
         self.init_main_window()
 
         self.console_redirector = ConsoleRedirector()
+
+    def update_config(self, pop_multiplier=None, max_gen_multiplier=None, max_stall_gen_multiplier=None):
+        if os.path.exists(self.cfg_path):
+            with open(self.cfg_path, "r") as file:
+                config = json.load(file)
+        else:
+            config = {}
+
+        if pop_multiplier:
+            config["pop_multiplier"] = pop_multiplier
+            self.pop_multiplier = pop_multiplier
+        else:
+            config["pop_multiplier"] = self.pop_multiplier
+        if max_gen_multiplier:
+            config["max_gen_multiplier"] = max_gen_multiplier
+            self.max_gen_multiplier = max_gen_multiplier
+        else:
+            config["max_gen_multiplier"] = self.max_gen_multiplier
+        if max_stall_gen_multiplier:
+            config["max_stall_gen_multiplier"] = max_stall_gen_multiplier
+            self.max_stall_gen_multiplier = max_stall_gen_multiplier
+        else:
+            config["max_stall_gen_multiplier"] = self.max_stall_gen_multiplier
+
+        with open(self.cfg_path, "w") as file:
+            json.dump(config, file, indent=4)
 
     def init_header(self):
         self.header = ctk.CTkFrame(self)
@@ -193,8 +224,68 @@ class App(ctk.CTk):
         self.settings_button.pack(side="right", padx=20)
         self.settings_button.bind("<Button-1>", lambda e: self.show_settings())
 
+    def create_beautiful_entry(self, master, text, font_label, font_entry, pady=(0, 0), fg_color=BACKGROUND_COLOR,
+                               wraplength=600):
+        frame = self.get_helpful_frame(master=master, pady=pady, fg_color=fg_color)
+        label = ctk.CTkLabel(frame, text=text, text_color=TEXT_COLOR, font=font_label, justify="left",
+                             wraplength=wraplength)
+        label.pack(side="left", padx=10)
+        entry = ctk.CTkEntry(master, fg_color=VIOLET_LIGHT, text_color=TEXT_COLOR,
+                             font=font_entry, justify="left", border_width=0, height=50)
+        entry.pack(side="top", padx=10, pady=5, fill="x")
+
+        return frame, label, entry
+
     def show_settings(self):
-        pass
+        self.toggle_buttons_state("disabled")
+
+        settings = ctk.CTkToplevel(self)
+        settings.title("Налаштування")
+        settings.geometry(self.calculate_center_position(600, 440))
+        settings.transient(self)
+        settings.configure(fg_color=BACKGROUND_COLOR)
+
+        pop_frame, pop_label, pop_entry = self.create_beautiful_entry(
+            settings,
+            "Множник кількості популяцій:",
+            ("Kharkiv", 26),
+            ("Kharkiv", 22),
+            pady=(20, 0))
+        pop_entry.insert(0, str(self.pop_multiplier))
+
+        max_gen_frame, max_gen_label, max_gen_entry = self.create_beautiful_entry(
+            settings,
+            "Множник максимальної кількості поколінь:",
+            ("Kharkiv", 26),
+            ("Kharkiv", 22),
+            pady=(10, 0))
+        max_gen_entry.insert(0, str(self.max_gen_multiplier))
+
+        max_stall_gen_frame, max_stall_gen_label, max_stall_gen_entry = self.create_beautiful_entry(
+            settings,
+            "Множник максимальної кількості поколінь без змін:",
+            ("Kharkiv", 26),
+            ("Kharkiv", 22),
+            pady=(10, 0))
+        max_stall_gen_entry.insert(0, str(self.max_stall_gen_multiplier))
+
+        save_button = ctk.CTkButton(settings, text="Зберегти", command=lambda: self.save_settings(settings, pop_entry,
+                                                                                                  max_gen_entry,
+                                                                                                  max_stall_gen_entry),
+                                    fg_color=VIOLET_DARK, text_color=WHITE_COLOR, font=("HeliosExtBlack", 26),
+                                    border_width=0, height=50)
+        save_button.pack(side="top", padx=10, pady=(20, 0), fill="x")
+
+        settings.grab_set()
+
+    def save_settings(self, settings, pop_entry, max_gen_entry, max_stall_gen_entry):
+        try:
+            self.update_config(int(pop_entry.get()), int(max_gen_entry.get()), int(max_stall_gen_entry.get()))
+            self.toggle_buttons_state("normal")
+            settings.destroy()
+        except ValueError:
+            self.show_dialog("Помилка", "Введіть коректні множники",
+                             self.calculate_center_position(300, 100))
 
     def back_clicked(self, _):
         if self.back_button.cget("image") == self.back_image and self.back_button.cget("state") == "normal":
@@ -436,13 +527,14 @@ class App(ctk.CTk):
             self.second_page.get("mode_button1").configure(fg_color=VIOLET_DARK)
             self.second_page.get("mode_button2").configure(fg_color=VIOLET_LIGHT)
 
-            max_budget_frame = self.get_helpful_frame(master=budget_frame, pady=(20, 0), fg_color=WHITE_COLOR)
-            max_budget_label = ctk.CTkLabel(max_budget_frame, text="Бюджет:", text_color=TEXT_COLOR,
-                                            font=("Kharkiv", 37), justify="left")
-            max_budget_label.pack(side="left", padx=10)
-            max_budget_entry = ctk.CTkEntry(budget_frame, fg_color=VIOLET_LIGHT, text_color=TEXT_COLOR,
-                                            font=("Kharkiv", 26), justify="left", border_width=0, height=50)
-            max_budget_entry.pack(side="top", padx=10, pady=5, fill="x")
+            max_budget_frame, max_budget_label, max_budget_entry = self.create_beautiful_entry(
+                budget_frame,
+                "Бюджет:",
+                ("Kharkiv", 26),
+                ("Kharkiv", 26),
+                pady=(20, 0),
+                fg_color=WHITE_COLOR
+            )
 
             self.second_page['mode'] = {
                 "budget_frame": budget_frame,
@@ -454,29 +546,32 @@ class App(ctk.CTk):
             self.second_page.get("mode_button1").configure(fg_color=VIOLET_LIGHT)
             self.second_page.get("mode_button2").configure(fg_color=VIOLET_DARK)
 
-            min_budget_frame = self.get_helpful_frame(master=budget_frame, pady=(20, 0), fg_color=WHITE_COLOR)
-            min_budget_label = ctk.CTkLabel(min_budget_frame, text="Мінімальний бюджет:",
-                                            text_color=TEXT_COLOR, font=("Kharkiv", 26), justify="left")
-            min_budget_label.pack(side="left", padx=10)
-            min_budget_entry = ctk.CTkEntry(budget_frame, fg_color=VIOLET_LIGHT, text_color=TEXT_COLOR,
-                                            font=("Kharkiv", 26), justify="left", border_width=0, height=50)
-            min_budget_entry.pack(side="top", padx=10, pady=5, fill="x")
+            min_budget_frame, min_budget_label, min_budget_entry = self.create_beautiful_entry(
+                budget_frame,
+                "Мінімальний бюджет:",
+                ("Kharkiv", 26),
+                ("Kharkiv", 26),
+                pady=(20, 0),
+                fg_color=WHITE_COLOR
+            )
 
-            max_budget_frame = self.get_helpful_frame(master=budget_frame, pady=(20, 0), fg_color=WHITE_COLOR)
-            max_budget_label = ctk.CTkLabel(max_budget_frame, text="Максимальний бюджет:",
-                                            text_color=TEXT_COLOR, font=("Kharkiv", 26), justify="left")
-            max_budget_label.pack(side="left", padx=10)
-            max_budget_entry = ctk.CTkEntry(budget_frame, fg_color=VIOLET_LIGHT, text_color=TEXT_COLOR,
-                                            font=("Kharkiv", 26), justify="left", border_width=0, height=50)
-            max_budget_entry.pack(side="top", padx=10, pady=5, fill="x")
+            max_budget_frame, max_budget_label, max_budget_entry = self.create_beautiful_entry(
+                budget_frame,
+                "Максимальний бюджет:",
+                ("Kharkiv", 26),
+                ("Kharkiv", 26),
+                pady=(20, 0),
+                fg_color=WHITE_COLOR
+            )
 
-            step_budget_frame = self.get_helpful_frame(master=budget_frame, pady=(20, 0), fg_color=WHITE_COLOR)
-            step_budget_label = ctk.CTkLabel(step_budget_frame, text="Крок:", text_color=TEXT_COLOR,
-                                             font=("Kharkiv", 26), justify="left")
-            step_budget_label.pack(side="left", padx=10)
-            step_budget_entry = ctk.CTkEntry(budget_frame, fg_color=VIOLET_LIGHT, text_color=TEXT_COLOR,
-                                             font=("Kharkiv", 26), justify="left", border_width=0, height=50)
-            step_budget_entry.pack(side="top", padx=10, pady=5, fill="x")
+            step_budget_frame, step_budget_label, step_budget_entry = self.create_beautiful_entry(
+                budget_frame,
+                "Крок:",
+                ("Kharkiv", 26),
+                ("Kharkiv", 26),
+                pady=(20, 0),
+                fg_color=WHITE_COLOR
+            )
 
             self.second_page['mode'] = {
                 "budget_frame": budget_frame,
@@ -673,7 +768,8 @@ class App(ctk.CTk):
             if isinstance(widget, ctk.CTkEntry) or isinstance(widget, ctk.CTkButton):
                 widget.configure(state=state)
         for widget in [self.forward_button, self.back_button, self.settings_button]:
-            widget.configure(state=state)
+            if widget:
+                widget.configure(state=state)
 
     def clear_window(self):
         for widget in self.winfo_children():
