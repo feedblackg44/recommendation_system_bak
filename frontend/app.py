@@ -237,8 +237,6 @@ class App(ctk.CTk):
         return frame, label, entry
 
     def show_settings(self):
-        self.toggle_buttons_state("disabled")
-
         settings = ctk.CTkToplevel(self)
         settings.title("Налаштування")
         settings.geometry(self.calculate_center_position(600, 440))
@@ -281,7 +279,6 @@ class App(ctk.CTk):
     def save_settings(self, settings, pop_entry, max_gen_entry, max_stall_gen_entry):
         try:
             self.update_config(int(pop_entry.get()), int(max_gen_entry.get()), int(max_stall_gen_entry.get()))
-            self.toggle_buttons_state("normal")
             settings.destroy()
         except ValueError:
             self.show_dialog("Помилка", "Введіть коректні множники",
@@ -732,21 +729,21 @@ class App(ctk.CTk):
             self.third_page["save_button"] = save_button
 
     def save_one_solution(self):
-        selected_dir = askdirectory(
-            title="Оберіть папку для збереження",
-            initialdir=self.parent_path
-        )
-
         if budget_entry := self.third_page.get("budget_entry"):
             budget = float(budget_entry.get())
         else:
             budget = None
 
-        if selected_dir and self.ga:
+        if self.ga:
             if budget and budget in self.ga.budgets:
-                self.ga.save_solution(selected_dir, budget)
-                self.show_dialog("Рішення збережено", "Рішення збережено\nуспішно",
-                                 self.calculate_center_position(300, 100))
+                selected_dir = askdirectory(
+                    title="Оберіть папку для збереження",
+                    initialdir=self.parent_path
+                )
+                if selected_dir:
+                    self.ga.save_solution(selected_dir, budget)
+                    self.show_dialog("Рішення збережено", "Рішення збережено\nуспішно",
+                                     self.calculate_center_position(300, 100))
             else:
                 self.show_dialog("Помилка", "Введіть коректний\nбюджет",
                                  self.calculate_center_position(300, 100))
