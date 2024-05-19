@@ -144,6 +144,7 @@ class App(ctk.CTk):
         self.geometry("600x700")
         self.configure(fg_color=BACKGROUND_COLOR)
         self.resizable(False, False)
+        self.protocol("WM_DELETE_WINDOW", self.show_exit_dialog)
 
         self.api = None
 
@@ -163,6 +164,28 @@ class App(ctk.CTk):
         self.init_main_window()
 
         self.console_redirector = ConsoleRedirector()
+
+    def show_exit_dialog(self):
+        dialog = ctk.CTkToplevel(self)
+        dialog.title("Вихід")
+        dialog.geometry(self.calculate_center_position(300, 200))
+        dialog.transient(self)
+        dialog.configure(fg_color=BACKGROUND_COLOR)
+
+        label = ctk.CTkLabel(dialog, text="Ви впевнені,\nщо хочете вийти?", text_color=TEXT_COLOR, font=("Kharkiv", 20))
+        label.pack(expand=True, padx=10, pady=10)
+
+        yes_button = ctk.CTkButton(dialog, text="Так", command=self.quit, fg_color=VIOLET_DARK, text_color=WHITE_COLOR,
+                                   font=("HeliosExtBlack", 26), border_width=0, height=50,
+                                   width=135)
+        yes_button.pack(side="left", padx=(10, 10), pady=10)
+
+        no_button = ctk.CTkButton(dialog, text="Ні", command=dialog.destroy, fg_color=VIOLET_DARK,
+                                  text_color=WHITE_COLOR, font=("HeliosExtBlack", 26), border_width=0, height=50,
+                                  width=135)
+        no_button.pack(side="right", padx=(0, 10), pady=10)
+
+        dialog.grab_set()
 
     def update_config(self, pop_multiplier=None, max_gen_multiplier=None, max_stall_gen_multiplier=None):
         if os.path.exists(self.cfg_path):
