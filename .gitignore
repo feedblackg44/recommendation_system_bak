@@ -11,3 +11,4 @@
 *.json
 **/__pycache__/
 **/*test*.*
+papers
