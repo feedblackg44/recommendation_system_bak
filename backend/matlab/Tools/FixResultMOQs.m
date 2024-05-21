@@ -35,7 +35,7 @@ for i = 1:length(sorted_order)
         else
             credit_amount = credit_amount + item('SystemSuggestedQuantity');
         end
-        current_amount = current_amount + item('OptimizedSuggestedQuantity');
+        current_amount = current_amount + item('BestSuggestedQuantity');
     end
     all_moqs = ValidMOQs(deal);
     moqs_credit = all_moqs(all_moqs <= credit_amount);
@@ -62,7 +62,7 @@ for i = 1:length(sorted_order)
                 end
             end
             needed_item = l_items(index);
-            needed_item('OptimizedSuggestedQuantity') = needed_item('OptimizedSuggestedQuantity') + 1;
+            needed_item('BestSuggestedQuantity') = needed_item('BestSuggestedQuantity') + 1;
         end
     end
 end
@@ -82,7 +82,7 @@ for i = 1:length(sorted_order)
     current_amount = 0;
     for k = 1:length(items_v)
         item = items_v{k};
-        current_amount = current_amount + item('OptimizedSuggestedQuantity');
+        current_amount = current_amount + item('BestSuggestedQuantity');
     end
     all_moqs = ValidMOQs(deal);
     min_valid_moq = max(all_moqs);
@@ -108,7 +108,7 @@ for i = 1:length(sorted_order)
                 end
             end
             needed_item = l_items(index);
-            needed_item('OptimizedSuggestedQuantity') = needed_item('OptimizedSuggestedQuantity') + 1;
+            needed_item('BestSuggestedQuantity') = needed_item('BestSuggestedQuantity') + 1;
         end
     end
 end
@@ -131,7 +131,7 @@ for i = 1:length(backwards_order)
     current_amount = 0;
     for k = 1:length(items_v)
         item = items_v{k};
-        current_amount = current_amount + item('OptimizedSuggestedQuantity');
+        current_amount = current_amount + item('BestSuggestedQuantity');
     end
     all_moqs = ValidMOQs(deal);
     valid_moqs = all_moqs(all_moqs >= min_moq);
@@ -158,7 +158,7 @@ for i = 1:length(backwards_order)
                 end
             end
             needed_item = l_items(index);
-            needed_item('OptimizedSuggestedQuantity') = needed_item('OptimizedSuggestedQuantity') - 1;
+            needed_item('BestSuggestedQuantity') = needed_item('BestSuggestedQuantity') - 1;
         end
     end
 end

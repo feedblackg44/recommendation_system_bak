@@ -27,7 +27,7 @@ def map_to_table(order, fbest, max_investment_period):
                'Purchase Price', 'Sale Price', 'Profit',
                'Average Daily Sales', 'Inventory',
                'Can be sold in credit terms', str_period,
-               'System Suggested Quantity', 'Optimization suggested quantity',
+               'System Suggested Quantity', 'Best suggested quantity',
                'Days For Sale', 'Item Budget', 'Total Item Sales',
                'Total Item Profit', '30 Days Profit', '30 Days Sales',
                'Weighted Average 30 Day Profit Margin',
@@ -59,7 +59,7 @@ def map_to_table(order, fbest, max_investment_period):
             table_out['Can be sold in credit terms'].append(0)
             table_out[str_period].append(0)
             table_out['System Suggested Quantity'].append(item['SystemSuggestedQuantity'])
-            table_out['Optimization suggested quantity'].append(item['OptimizedSuggestedQuantity'])
+            table_out['Best suggested quantity'].append(item['BestSuggestedQuantity'])
             table_out['Days For Sale'].append(0)
             table_out['Item Budget'].append(0)
             table_out['Total Item Sales'].append(0)

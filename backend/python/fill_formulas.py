@@ -80,14 +80,14 @@ def main(filename=None):
     headers_sheet1 = ['Deal ID', 'Item No', 'Item Name', 'Used Minimum Order Quantity', 'Deal Sum', 'Purchase Price',
                       'Sale Price', 'Profit', 'Average Daily Sales', 'Empty ADS Deal', 'Inventory',
                       'Can be sold in credit terms', can_be_sold_total, 'System Suggested Quantity',
-                      'Optimization suggested quantity', 'Overstock',
+                      'Best suggested quantity', 'Overstock',
                       'Days For Sale', 'Deal Days Dispersion', 'Item Budget', 'Budget', 'Total Item Sales',
                       'Total Item Profit', '30 Days Profit', '30 Days Sales',
                       'Weighted Average 30 Day Profit Margin', 'Effectiveness', 'Average Effectiveness', 'AddToTotal',
                       'Included', 'Days For Sale Average', 'Days For Sale sub', 'Overstock check',
                       'Overstock check sum', 'Daily Sales', 'Empty ADS Check Profit']
 
-    headers_sheet3 = ['Deal ID', 'ABC', 'Daily Sales', 'MaxOQ', 'OSQ', 'SSQ']
+    headers_sheet3 = ['Deal ID', 'ABC', 'Daily Sales', 'MaxBQ', 'BSQ', 'SSQ']
 
     names1 = generate_column_names(headers_sheet1)
 
@@ -100,7 +100,7 @@ def main(filename=None):
         'Used Minimum Order Quantity': f'=MAXIFS(Sheet2!D:D, Sheet2!B:B, {names1["Item No"]}2, Sheet2!D:D, '
                                        f'"<="&{names1["Deal Sum"]}2)',
         'Deal Sum': f'=SUMIF({names1["Deal ID"]}:{names1["Deal ID"]}, {names1["Deal ID"]}2, '
-                    f'{names1["Optimization suggested quantity"]}:{names1["Optimization suggested quantity"]})',
+                    f'{names1["Best suggested quantity"]}:{names1["Best suggested quantity"]})',
         'Empty ADS Deal': f'=IF(AND(SUMIFS({names1["Average Daily Sales"]}:{names1["Average Daily Sales"]},'
                           f'{names1["Deal ID"]}:{names1["Deal ID"]},{names1["Deal ID"]}2)<=0,'
                           f'COUNTIFS({names1["Deal ID"]}:{names1["Deal ID"]},{names1["Deal ID"]}2,'
@@ -111,7 +111,7 @@ def main(filename=None):
         can_be_sold_total: f'=MAX(0, {names1["Average Daily Sales"]}2 * Sheet4!$A$2 - {names1["Inventory"]}2)',
         'Overstock': f'=IF({names1["Overstock check sum"]}2,"check","OK")',
         'Days For Sale': f'=IF({names1["Average Daily Sales"]}2 > 0, ({names1["Inventory"]}2 + '
-                         f'{names1["Optimization suggested quantity"]}2) / {names1["Average Daily Sales"]}2, 0)',
+                         f'{names1["Best suggested quantity"]}2) / {names1["Average Daily Sales"]}2, 0)',
         'Deal Days Dispersion': f'=IF(COUNTIFS({names1["Deal ID"]}:{names1["Deal ID"]}, {names1["Deal ID"]}2, '
                                 f'{names1["Included"]}:{names1["Included"]}, TRUE) > 0, '
                                 f'AVERAGEIFS({names1["Days For Sale sub"]}:{names1["Days For Sale sub"]}, '
@@ -119,13 +119,13 @@ def main(filename=None):
                                 f'{names1["Included"]}:{names1["Included"]}, TRUE) / COUNTIFS({names1["Deal ID"]}:'
                                 f'{names1["Deal ID"]}, {names1["Deal ID"]}2, {names1["Included"]}:'
                                 f'{names1["Included"]}, TRUE), 0)',
-        'Item Budget': f'={names1["Purchase Price"]}2 * {names1["Optimization suggested quantity"]}2',
+        'Item Budget': f'={names1["Purchase Price"]}2 * {names1["Best suggested quantity"]}2',
         'Budget': f'=SUM({names1["Item Budget"]}:{names1["Item Budget"]})',
-        'Total Item Sales': f'={names1["Sale Price"]}2 * {names1["Optimization suggested quantity"]}2',
-        'Total Item Profit': f'={names1["Optimization suggested quantity"]}2 * {names1["Profit"]}2',
-        '30 Days Profit': f'={names1["Profit"]}2 * MIN({names1["Optimization suggested quantity"]}2, '
+        'Total Item Sales': f'={names1["Sale Price"]}2 * {names1["Best suggested quantity"]}2',
+        'Total Item Profit': f'={names1["Best suggested quantity"]}2 * {names1["Profit"]}2',
+        '30 Days Profit': f'={names1["Profit"]}2 * MIN({names1["Best suggested quantity"]}2, '
                           f'MAX(30 * {names1["Average Daily Sales"]}2 - {names1["Inventory"]}2, 0))',
-        '30 Days Sales': f'={names1["Sale Price"]}2 * MIN({names1["Optimization suggested quantity"]}2, '
+        '30 Days Sales': f'={names1["Sale Price"]}2 * MIN({names1["Best suggested quantity"]}2, '
                          f'MAX(30 * {names1["Average Daily Sales"]}2 - {names1["Inventory"]}2, 0))',
         'Weighted Average 30 Day Profit Margin': f'={names1["30 Days Profit"]}2 / SUM({names1["30 Days Sales"]}:'
                                                  f'{names1["30 Days Sales"]})',
@@ -140,21 +140,21 @@ def main(filename=None):
         'Days For Sale sub': f'=IF({names1["Average Daily Sales"]}2 > 0, ({names1["Days For Sale"]}2 - '
                              f'{names1["Days For Sale Average"]}2)^2, 0)',
         'Overstock check': f'=IF(AND({names1["Days For Sale"]}2>Sheet4!$A$2, '
-                           f'{names1["Optimization suggested quantity"]}2>0), '
+                           f'{names1["Best suggested quantity"]}2>0), '
                            f'IF(AND({names1["System Suggested Quantity"]}2=1, '
-                           f'{names1["Optimization suggested quantity"]}2=1), 0, 1), 0)',
+                           f'{names1["Best suggested quantity"]}2=1), 0, 1), 0)',
         'Overstock check sum': f'=SUMIF({names1["Deal ID"]}:{names1["Deal ID"]}, {names1["Deal ID"]}2, '
                                f'{names1["Overstock check"]}:{names1["Overstock check"]})',
         'Daily Sales': f'={names1["Sale Price"]}2 * {names1["Average Daily Sales"]}2',
-        'Empty ADS Check Profit': f'={names1["Profit"]}2 * {names1["Optimization suggested quantity"]}2'
+        'Empty ADS Check Profit': f'={names1["Profit"]}2 * {names1["Best suggested quantity"]}2'
     }
 
     formulas_sheet3 = {
         'Daily Sales': f'=SUMIF(Sheet1!{names1["Deal ID"]}:{names1["Deal ID"]}, {names3["Deal ID"]}2, '
                        f'Sheet1!{names1["Daily Sales"]}:{names1["Daily Sales"]})',
-        'MaxOQ': f'=MAXIFS(Sheet2!D:D, Sheet2!A:A, {names3["Deal ID"]}2)',
-        'OSQ': f'=SUMIF(Sheet1!{names1["Deal ID"]}:{names1["Deal ID"]}, {names3["Deal ID"]}2, '
-               f'Sheet1!{names1["Optimization suggested quantity"]}:{names1["Optimization suggested quantity"]})',
+        'MaxBQ': f'=MAXIFS(Sheet2!D:D, Sheet2!A:A, {names3["Deal ID"]}2)',
+        'BSQ': f'=SUMIF(Sheet1!{names1["Deal ID"]}:{names1["Deal ID"]}, {names3["Deal ID"]}2, '
+               f'Sheet1!{names1["Best suggested quantity"]}:{names1["Best suggested quantity"]})',
         'SSQ': f'=SUMIF(Sheet1!{names1["Deal ID"]}:{names1["Deal ID"]}, {names3["Deal ID"]}2, '
                f'Sheet1!{names1["System Suggested Quantity"]}:{names1["System Suggested Quantity"]})'
     }
@@ -166,7 +166,7 @@ def main(filename=None):
     autofill_formulas(sheet3, formulas_sheet3, names3)
 
     sheet1.range(f'{names1["Effectiveness"]}:{names1["Empty ADS Check Profit"]}').api.EntireColumn.Hidden = True
-    sheet1.range(f'{names1["Optimization suggested quantity"]}:{names1["Optimization suggested quantity"]}').color = (
+    sheet1.range(f'{names1["Best suggested quantity"]}:{names1["Best suggested quantity"]}').color = (
         146, 208, 80
     )
 

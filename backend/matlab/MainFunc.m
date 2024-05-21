@@ -61,7 +61,7 @@ function [xbest, fbest, total_budget, deals_variants_all, check_ub, order] = ...
             @(x)Constraints(x, budget, order, deals_variants_all, check_ub, BudgetFunc), ...
             1:length(lb), opts_ga);
     else
-        disp('No variables to optimize')
+        disp('No variables to solve')
         xbest = 0;
         fbest = 0;
     end

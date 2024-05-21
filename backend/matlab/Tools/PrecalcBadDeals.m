@@ -20,6 +20,6 @@ end
 % for i = 1:length(items)
 %     item = items(i);
 %     if item('IncludedDispersion')
-%         init_pop(end+1) = item('OptimizedSuggestedQuantity');
+%         init_pop(end+1) = item('BestSuggestedQuantity');
 %     end
 % end

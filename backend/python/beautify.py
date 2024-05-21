@@ -45,7 +45,7 @@ def beautify(input_table, max_investment_period):
             cur_item = {'ItemNo': items_num[i], 'ItemName': items_name[i],
                         'MOQs': [discount_moq[i]], 'PurchasePrices': [purchase_prices[i]], 'SalePrice': sale_prices[i],
                         'AverageDailySales': avg_daily_sales[i], 'Inventory': cur_inventory,
-                        'SystemSuggestedQuantity': ssq, 'OptimizedSuggestedQuantity': ssq,
+                        'SystemSuggestedQuantity': ssq, 'BestSuggestedQuantity': ssq,
                         'SystemCoverageDays': system_cov_days[i], 'CreditTerms': credit_terms[i],
                         'MaxInvestmentPeriod': max_investment_period, 'DealName': deal_names[i], 'AddToTotal': 0,
                         'CanBeSoldTotal': max(avg_daily_sales[i] * max_investment_period - cur_inventory, 0),
