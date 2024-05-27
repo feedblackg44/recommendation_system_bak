@@ -1,6 +1,7 @@
 import json
 import math
 import os
+import shutil
 from datetime import datetime
 
 import matlab.engine
@@ -36,6 +37,10 @@ class GeneticAlgorithm:
         self._max_budget = None
         self._min_budget = None
         self._num_cores = psutil.cpu_count(logical=False)
+        self._temp_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'temp')
+        if os.path.exists(self._temp_dir):
+            shutil.rmtree(self._temp_dir)
+        os.makedirs(self._temp_dir)
 
         self._host = "" if not host else host
         self._port = "" if not port else str(port)
@@ -111,6 +116,20 @@ class GeneticAlgorithm:
         )
 
         total_budget = math.ceil(total_budget)
+        deals_variants = self._eng.MapToJson(deals_variants, nargout=1)
+        deals_variants = json.loads(deals_variants)
+        order = self._eng.MapToJson(order, nargout=1)
+        order = json.loads(order)
+        check_ub = [bool(i) for i in check_ub[0]] if not isinstance(check_ub, float) else [bool(check_ub)]
+
+        if self._temp_dir:
+            solution = {
+                'xbest': xbest,
+                'fbest': fbest,
+                'deals_variants': deals_variants,
+                'check_ub': check_ub
+            }
+            self.save_solution(self._temp_dir, budget, solution, order, False)
 
         return xbest, fbest, total_budget, deals_variants, check_ub, order
 
@@ -172,16 +191,12 @@ class GeneticAlgorithm:
 
         self._stop_par_pool()
 
-        deals_variants = self._eng.MapToJson(deals_variants, nargout=1)
-        order = self._eng.MapToJson(order, nargout=1)
-        check_ub = [bool(i) for i in check_ub[0]] if not isinstance(check_ub, float) else [bool(check_ub)]
-
         return xbests, fbests, deals_variants, check_ub, order
 
     def run(self, max_budget, min_budget=0, step=0, single=True, budget_credit=False,
             pop_multiplier=4, max_gen_multiplier=20, max_stall_gen_multiplier=3):
         self._single = single
-        xbests, fbests, deals_variants, check_ub, data_str = self._main_func(
+        xbests, fbests, deals_variants, check_ub, data = self._main_func(
             float(min_budget),
             float(max_budget),
             float(step),
@@ -193,9 +208,7 @@ class GeneticAlgorithm:
             *self._matlab_output
         )
 
-        self._data = json.loads(data_str)
-
-        deals_variants = json.loads(deals_variants)
+        self._data = data
 
         self._solution = {
             'xbests': xbests,
@@ -204,11 +217,17 @@ class GeneticAlgorithm:
             'check_ub': check_ub
         }
 
-    def save_solution(self, selected_dir, budget=None):
-        xbests = self._solution['xbests']
-        fbests = self._solution['fbests']
-        deals_variants_all = self._solution['deals_variants']
-        check_ub = self._solution['check_ub']
+    def save_solution(self, selected_dir, budget=None, solution=None, data=None, echo=True):
+        if not solution:
+            solution = self._solution
+
+        if not data:
+            data = self._data
+
+        xbests = solution['xbests']
+        fbests = solution['fbests']
+        deals_variants_all = solution['deals_variants']
+        check_ub = solution['check_ub']
 
         min_budget = min(list(fbests.keys()))
         max_budget = max(list(fbests.keys()))
@@ -227,16 +246,16 @@ class GeneticAlgorithm:
 
             k = 0
             deals_variants_all_keys = list(deals_variants_all.keys())
-            for j, key in enumerate(self._data.keys()):
+            for j, key in enumerate(data.keys()):
                 if check_ub[j]:
                     deal_vars = deals_variants_all[deals_variants_all_keys[k]]
-                    self._data[key] = deal_vars[f'x{int(xbest[k])}']
+                    data[key] = deal_vars[f'x{int(xbest[k])}']
                     k += 1
 
             choosed_budget = float(choosed_budget.replace('x', '')) if isinstance(choosed_budget, str) \
                 else choosed_budget
 
-            table_out, second_table, third_table = map_to_table(self._data, fbest, self.max_investment_period)
+            table_out, second_table, third_table = map_to_table(data, fbest, self.max_investment_period)
 
             self.selected_file = self.selected_file.replace('/', '\\')
             dotIndex = self.selected_file.rfind('.')
@@ -262,7 +281,7 @@ class GeneticAlgorithm:
 
             write_out_table(table_out, self._data_table, second_table, third_table, f'{out_name}.xlsx')
 
-            fill_formulas(f'{out_name}.xlsx')
+            fill_formulas(f'{out_name}.xlsx', echo)
 
             if budget or self._single:
                 break

@@ -1,10 +1,6 @@
 function GetDealToMOQ(deal, desired_moq)
     items = deal.values;
-    % for i = 1:length(items)
-    %     item = items{i};
-    %     item('BestSuggestedQuantity') = item('SystemSuggestedQuantity');
-    % end
-    
+
     memoDSBD = @DealSumByDeal;
     
     if memoDSBD(deal) < desired_moq

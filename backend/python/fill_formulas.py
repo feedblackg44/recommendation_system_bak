@@ -54,7 +54,7 @@ def autofill_formulas(sheet, formulas, headers):
             sheet.range(f'{letter}2').api.AutoFill(sheet.range(range_str).api, 0)
 
 
-def main(filename=None):
+def main(filename=None, echo=True):
     parser = argparse.ArgumentParser()
     parser.add_argument("--excelname", help="Excel file name")
     args = parser.parse_args()
@@ -175,7 +175,8 @@ def main(filename=None):
     if len(app.books) == 0:
         app.quit()
 
-    print('Formulas filled successfully')
+    if echo:
+        print('Formulas filled successfully')
 
 
 if __name__ == '__main__':

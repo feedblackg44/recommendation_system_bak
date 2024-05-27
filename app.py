@@ -9,9 +9,8 @@ from PIL import Image
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
-from backend.python.genetic_algorithm import GeneticAlgorithm
-from frontend.api import Api
-from frontend.console_redirector import ConsoleRedirector
+from backend import GeneticAlgorithm
+from frontend import Api, ConsoleRedirector
 
 VIOLET_DARK = "#414166"
 VIOLET_LIGHT = "#B7B7CC"
@@ -137,8 +136,7 @@ class App(ctk.CTk):
         self.port = port
 
         self.current_path = os.path.dirname(os.path.abspath(__file__))
-        self.parent_path = os.path.abspath(os.path.join(self.current_path, os.pardir))
-        self.assets_path = os.path.join(self.parent_path, "frontend/assets")
+        self.assets_path = os.path.join(self.current_path, "frontend/assets")
 
         self.title("Рекомендаційна система для роздрібної торгівлі")
         self.geometry("600x700")
@@ -148,11 +146,11 @@ class App(ctk.CTk):
 
         self.api = None
 
-        matlab_cfg_path = os.path.join(self.parent_path, "backend/config.json") \
+        matlab_cfg_path = os.path.join(self.current_path, "matlab_config.json") \
             if not matlab_cfg_path else matlab_cfg_path
         self.ga = GeneticAlgorithm(matlab_cfg_path, host=self.host, port=self.port)
 
-        self.cfg_path = os.path.join(self.current_path, "config.json") if not cfg_path else cfg_path
+        self.cfg_path = os.path.join(self.current_path, "app_config.json") if not cfg_path else cfg_path
         # self.ga = None
 
         self.pop_multiplier = 4
@@ -453,7 +451,7 @@ class App(ctk.CTk):
         file_path = askopenfilename(
             title="Select file",
             filetypes=(("Excel files", "*.xlsx"), ("All files", "*.*")),
-            initialdir=self.parent_path
+            initialdir=self.current_path
         )
         if file_path:
             self.selected_file_path = file_path
@@ -761,7 +759,7 @@ class App(ctk.CTk):
             if budget and budget in self.ga.budgets:
                 selected_dir = askdirectory(
                     title="Оберіть папку для збереження",
-                    initialdir=self.parent_path
+                    initialdir=self.current_path
                 )
                 if selected_dir:
                     self.ga.save_solution(selected_dir, budget)
@@ -774,7 +772,7 @@ class App(ctk.CTk):
     def save_all_solutions(self):
         selected_dir = askdirectory(
             title="Оберіть папку для збереження",
-            initialdir=self.parent_path
+            initialdir=self.current_path
         )
 
         if selected_dir and self.ga:
