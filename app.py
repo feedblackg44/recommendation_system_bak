@@ -18,6 +18,10 @@ BACKGROUND_COLOR = "#E2E3EB"
 TEXT_COLOR = "#232323"
 WHITE_COLOR = "#FFFFFF"
 
+FONT_HEAD = "Kharkiv"
+FONT_BODY = "Kharkiv"
+FONT_BUTTONS = "HeliosExtBlack"
+
 
 def print_to_widget(obj, text_widget, data):
     generation = data["generation"]
@@ -170,16 +174,16 @@ class App(ctk.CTk):
         dialog.transient(self)
         dialog.configure(fg_color=BACKGROUND_COLOR)
 
-        label = ctk.CTkLabel(dialog, text="Ви впевнені,\nщо хочете вийти?", text_color=TEXT_COLOR, font=("Kharkiv", 20))
+        label = ctk.CTkLabel(dialog, text="Ви впевнені,\nщо хочете вийти?", text_color=TEXT_COLOR, font=(FONT_BODY, 20))
         label.pack(expand=True, padx=10, pady=10)
 
         yes_button = ctk.CTkButton(dialog, text="Так", command=self.quit, fg_color=VIOLET_DARK, text_color=WHITE_COLOR,
-                                   font=("HeliosExtBlack", 26), border_width=0, height=50,
+                                   font=(FONT_BUTTONS, 26), border_width=0, height=50,
                                    width=135)
         yes_button.pack(side="left", padx=(10, 10), pady=10)
 
         no_button = ctk.CTkButton(dialog, text="Ні", command=dialog.destroy, fg_color=VIOLET_DARK,
-                                  text_color=WHITE_COLOR, font=("HeliosExtBlack", 26), border_width=0, height=50,
+                                  text_color=WHITE_COLOR, font=(FONT_BUTTONS, 26), border_width=0, height=50,
                                   width=135)
         no_button.pack(side="right", padx=(0, 10), pady=10)
 
@@ -267,31 +271,31 @@ class App(ctk.CTk):
         pop_frame, pop_label, pop_entry = self.create_beautiful_entry(
             settings,
             "Множник кількості популяцій:",
-            ("Kharkiv", 26),
-            ("Kharkiv", 22),
+            (FONT_BODY, 26),
+            (FONT_BODY, 22),
             pady=(20, 0))
         pop_entry.insert(0, str(self.pop_multiplier))
 
         max_gen_frame, max_gen_label, max_gen_entry = self.create_beautiful_entry(
             settings,
             "Множник максимальної кількості поколінь:",
-            ("Kharkiv", 26),
-            ("Kharkiv", 22),
+            (FONT_BODY, 26),
+            (FONT_BODY, 22),
             pady=(10, 0))
         max_gen_entry.insert(0, str(self.max_gen_multiplier))
 
         max_stall_gen_frame, max_stall_gen_label, max_stall_gen_entry = self.create_beautiful_entry(
             settings,
             "Множник максимальної кількості поколінь без змін:",
-            ("Kharkiv", 26),
-            ("Kharkiv", 22),
+            (FONT_BODY, 26),
+            (FONT_BODY, 22),
             pady=(10, 0))
         max_stall_gen_entry.insert(0, str(self.max_stall_gen_multiplier))
 
         save_button = ctk.CTkButton(settings, text="Зберегти", command=lambda: self.save_settings(settings, pop_entry,
                                                                                                   max_gen_entry,
                                                                                                   max_stall_gen_entry),
-                                    fg_color=VIOLET_DARK, text_color=WHITE_COLOR, font=("HeliosExtBlack", 26),
+                                    fg_color=VIOLET_DARK, text_color=WHITE_COLOR, font=(FONT_BUTTONS, 26),
                                     border_width=0, height=50)
         save_button.pack(side="top", padx=10, pady=(20, 0), fill="x")
 
@@ -364,15 +368,15 @@ class App(ctk.CTk):
         self.clear_window()
 
         title_label = ctk.CTkLabel(self, text="Рекомендаційна система\nдля роздрібної торгівлі",
-                                   text_color=VIOLET_DARK, font=("Kharkiv", 33, "bold"), justify="left")
+                                   text_color=VIOLET_DARK, font=(FONT_HEAD, 33, "bold"), justify="left")
         title_label.pack(side="top", pady=(20, 0))
 
         number_frame = self.get_helpful_frame(pady=(40, 0))
         number_label = ctk.CTkLabel(number_frame, text="Максимальний\nперіод замовлення:",
-                                    text_color=TEXT_COLOR, font=("Kharkiv", 37), justify="left")
+                                    text_color=TEXT_COLOR, font=(FONT_BODY, 37), justify="left")
         number_label.pack(side="left", padx=30)
 
-        number_entry = ctk.CTkEntry(self, fg_color=VIOLET_LIGHT, text_color=TEXT_COLOR, font=("Kharkiv", 26),
+        number_entry = ctk.CTkEntry(self, fg_color=VIOLET_LIGHT, text_color=TEXT_COLOR, font=(FONT_BODY, 26),
                                     justify="left", border_width=0, height=50)
         number_entry.pack(side="top", padx=25, pady=5, fill="x")
         if self.entered_number is not None:
@@ -380,9 +384,9 @@ class App(ctk.CTk):
 
         file_frame = self.get_helpful_frame(pady=(50, 0))
         file_label = ctk.CTkLabel(file_frame, text=f"Обраний файл:",
-                                  text_color=TEXT_COLOR, font=("Kharkiv", 37), justify="left")
+                                  text_color=TEXT_COLOR, font=(FONT_BODY, 37), justify="left")
         file_label.pack(side="left", padx=30)
-        file_entry = ctk.CTkEntry(self, fg_color=VIOLET_LIGHT, text_color=TEXT_COLOR, font=("Kharkiv", 26),
+        file_entry = ctk.CTkEntry(self, fg_color=VIOLET_LIGHT, text_color=TEXT_COLOR, font=(FONT_BODY, 26),
                                   justify="left", border_width=0, height=50)
         file_entry.pack(side="top", padx=25, pady=(5, 0), fill="x")
         file_entry.configure(state="readonly")
@@ -394,12 +398,12 @@ class App(ctk.CTk):
 
         file_button_frame = self.get_helpful_frame(pady=(10, 0))
         file_button = ctk.CTkButton(file_button_frame, text="Обрати файл", command=self.select_file,
-                                    fg_color=VIOLET_DARK, text_color=WHITE_COLOR, font=("HeliosExtBlack", 22),
+                                    fg_color=VIOLET_DARK, text_color=WHITE_COLOR, font=(FONT_BUTTONS, 22),
                                     border_width=0, height=50, width=270)
         file_button.pack(side="left", padx=25)
 
         calculate_button = ctk.CTkButton(self, text="Розрахувати бюджет", command=self.calculate_budget,
-                                         fg_color=VIOLET_DARK, text_color=WHITE_COLOR, font=("HeliosExtBlack", 32),
+                                         fg_color=VIOLET_DARK, text_color=WHITE_COLOR, font=(FONT_BUTTONS, 32),
                                          border_width=0, height=60)
         calculate_button.pack(side="top", padx=25, pady=(65, 0), fill="x")
 
@@ -434,7 +438,7 @@ class App(ctk.CTk):
         dialog.transient(self)
         dialog.configure(fg_color=BACKGROUND_COLOR)
 
-        label = ctk.CTkLabel(dialog, text=message, text_color=TEXT_COLOR, font=("Kharkiv", 20))
+        label = ctk.CTkLabel(dialog, text=message, text_color=TEXT_COLOR, font=(FONT_BODY, 20))
         label.pack(expand=True, padx=10, pady=10)
 
         dialog.grab_set()
@@ -502,23 +506,23 @@ class App(ctk.CTk):
         self.clear_window()
 
         mode_frame = self.get_helpful_frame(pady=(10, 0))
-        mode_label = ctk.CTkLabel(mode_frame, text="Режим роботи:", text_color=TEXT_COLOR, font=("Kharkiv", 38),
+        mode_label = ctk.CTkLabel(mode_frame, text="Режим роботи:", text_color=TEXT_COLOR, font=(FONT_HEAD, 38),
                                   justify="left")
         mode_label.pack(side="left", padx=30)
         budget_mode_frame = self.get_helpful_frame(pady=(5, 0))
         mode_button1 = ctk.CTkButton(budget_mode_frame, text="Одне рішення", text_color=WHITE_COLOR,
-                                     font=("HeliosExtBlack", 22), height=50, width=265, fg_color=VIOLET_DARK,
+                                     font=(FONT_BUTTONS, 22), height=50, width=265, fg_color=VIOLET_DARK,
                                      command=lambda: self.update_budget_input(True))
         mode_button1.pack(side="left", padx=(30, 0))
         mode_button2 = ctk.CTkButton(budget_mode_frame, text="Кілька рішень", text_color=WHITE_COLOR,
-                                     font=("HeliosExtBlack", 22), height=50, width=265, fg_color=VIOLET_DARK,
+                                     font=(FONT_BUTTONS, 22), height=50, width=265, fg_color=VIOLET_DARK,
                                      command=lambda: self.update_budget_input(False))
         mode_button2.pack(side="left", padx=(10, 30))
 
         result_frame = self.get_helpful_frame(pady=(10, 0))
         result_label = ctk.CTkLabel(result_frame, text=f"Мінімальний бюджет: {self.min_budget}$\n"
                                                        f"Максимальний бюджет: {self.max_budget}$",
-                                    text_color=TEXT_COLOR, font=("Kharkiv", 25),
+                                    text_color=TEXT_COLOR, font=(FONT_BODY, 25),
                                     justify="left")
         result_label.pack(side="left", padx=30)
 
@@ -549,8 +553,8 @@ class App(ctk.CTk):
             max_budget_frame, max_budget_label, max_budget_entry = self.create_beautiful_entry(
                 budget_frame,
                 "Бюджет:",
-                ("Kharkiv", 26),
-                ("Kharkiv", 26),
+                (FONT_BODY, 26),
+                (FONT_BODY, 26),
                 pady=(20, 0),
                 fg_color=WHITE_COLOR
             )
@@ -568,8 +572,8 @@ class App(ctk.CTk):
             min_budget_frame, min_budget_label, min_budget_entry = self.create_beautiful_entry(
                 budget_frame,
                 "Мінімальний бюджет:",
-                ("Kharkiv", 26),
-                ("Kharkiv", 26),
+                (FONT_BODY, 26),
+                (FONT_BODY, 26),
                 pady=(20, 0),
                 fg_color=WHITE_COLOR
             )
@@ -577,8 +581,8 @@ class App(ctk.CTk):
             max_budget_frame, max_budget_label, max_budget_entry = self.create_beautiful_entry(
                 budget_frame,
                 "Максимальний бюджет:",
-                ("Kharkiv", 26),
-                ("Kharkiv", 26),
+                (FONT_BODY, 26),
+                (FONT_BODY, 26),
                 pady=(20, 0),
                 fg_color=WHITE_COLOR
             )
@@ -586,8 +590,8 @@ class App(ctk.CTk):
             step_budget_frame, step_budget_label, step_budget_entry = self.create_beautiful_entry(
                 budget_frame,
                 "Крок:",
-                ("Kharkiv", 26),
-                ("Kharkiv", 26),
+                (FONT_BODY, 26),
+                (FONT_BODY, 26),
                 pady=(20, 0),
                 fg_color=WHITE_COLOR
             )
@@ -606,7 +610,7 @@ class App(ctk.CTk):
             }
 
         run_algorithm_button = ctk.CTkButton(self, text="Запуск алгоритму", command=self.run_algorithm,
-                                             fg_color=VIOLET_DARK, text_color=WHITE_COLOR, font=("HeliosExtBlack", 32),
+                                             fg_color=VIOLET_DARK, text_color=WHITE_COLOR, font=(FONT_BUTTONS, 32),
                                              border_width=0, height=60)
         run_algorithm_button.pack(side="top", padx=25, pady=(10, 25), fill="x")
 
@@ -658,7 +662,7 @@ class App(ctk.CTk):
 
         alg_frame = self.get_helpful_frame(pady=(20, 0))
         alg_label = ctk.CTkLabel(alg_frame, text="Виконується алгоритм...", text_color=TEXT_COLOR,
-                                 font=("Kharkiv", 33), justify="left")
+                                 font=(FONT_HEAD, 33), justify="left")
         alg_label.pack(side="left", padx=30)
 
         update_text = ctk.CTkTextbox(self, fg_color=TEXT_COLOR, font=("Consolas", 12))
@@ -713,7 +717,7 @@ class App(ctk.CTk):
             # if True:
             budget_frame = self.get_helpful_frame(pady=(10, 0))
             budget_label = ctk.CTkLabel(budget_frame, text="Оберіть бюджет:", text_color=TEXT_COLOR,
-                                        font=("Kharkiv", 25), justify="left")
+                                        font=(FONT_BODY, 25), justify="left")
             budget_label.pack(side="left", padx=30)
             entry_var = ctk.StringVar()
             entry_var.trace_add(
@@ -726,13 +730,13 @@ class App(ctk.CTk):
                                                              command=self.save_one_solution)
             )
             budget_entry = ctk.CTkEntry(self, fg_color=VIOLET_LIGHT, text_color=TEXT_COLOR,
-                                        font=("Kharkiv", 26), justify="left", border_width=0, height=50,
+                                        font=(FONT_BODY, 26), justify="left", border_width=0, height=50,
                                         textvariable=entry_var)
             budget_entry.pack(side="top", padx=30, pady=5, fill="x")
 
             save_button = ctk.CTkButton(self, text="Зберегти всі рішення",
                                         command=self.save_all_solutions, fg_color=VIOLET_DARK,
-                                        text_color=WHITE_COLOR, font=("HeliosExtBlack", 26),
+                                        text_color=WHITE_COLOR, font=(FONT_BUTTONS, 26),
                                         border_width=0, height=50)
             save_button.pack(side="top", padx=30, pady=(10, 25), fill="x")
 
@@ -746,7 +750,7 @@ class App(ctk.CTk):
         else:
             save_button = ctk.CTkButton(self, text="Зберегти рішення",
                                         command=self.save_one_solution, fg_color=VIOLET_DARK,
-                                        text_color=WHITE_COLOR, font=("HeliosExtBlack", 32),
+                                        text_color=WHITE_COLOR, font=(FONT_BUTTONS, 32),
                                         border_width=0, height=50)
             save_button.pack(side="top", padx=30, pady=(10, 25), fill="x")
 
