@@ -174,7 +174,8 @@ class App(ctk.CTk):
         dialog.transient(self)
         dialog.configure(fg_color=BACKGROUND_COLOR)
 
-        label = ctk.CTkLabel(dialog, text="Ви впевнені, що хочете вийти?", text_color=TEXT_COLOR, font=(FONT_BODY, 20))
+        label = ctk.CTkLabel(dialog, text="Ви впевнені, що хочете вийти?", text_color=TEXT_COLOR, font=(FONT_BODY, 20),
+                             wraplength=270)
         label.pack(expand=True, padx=10, pady=10)
 
         yes_button = ctk.CTkButton(dialog, text="Так", command=self.quit, fg_color=VIOLET_DARK, text_color=WHITE_COLOR,
@@ -434,11 +435,14 @@ class App(ctk.CTk):
 
         return f"{width}x{height}+{dialog_x}+{dialog_y}"
 
-    def show_dialog(self, title, message, geometry, wraplength=270):
-        dialog = ctk.CTkToplevel(self)
+    def show_dialog(self, title, message, geometry, wraplength=270, master=None):
+        if not master:
+            master = self
+
+        dialog = ctk.CTkToplevel(master)
         dialog.title(title)
         dialog.geometry(geometry)
-        dialog.transient(self)
+        dialog.transient(master)
         dialog.configure(fg_color=BACKGROUND_COLOR)
 
         label = ctk.CTkLabel(dialog, text=message, text_color=TEXT_COLOR, font=(FONT_BODY, 20), wraplength=wraplength)
@@ -494,8 +498,9 @@ class App(ctk.CTk):
         try:
             self.min_budget, self.max_budget = self.ga.precalculate(file_path, number) if self.ga else (0, 100)
         except Exception as e:
+            self.close_dialog("calculating_dialog")
             self.show_dialog("Помилка",
-                             f"Помилка обробки. Перевірте введені дані або зверніться до адміністратора",
+                             f"Помилка обробки. Перевірте вхідні дані або зверніться до адміністратора",
                              self.calculate_center_position(300, 100))
             print(e)
             return
@@ -714,8 +719,9 @@ class App(ctk.CTk):
                         pop_multiplier=self.pop_multiplier, max_gen_multiplier=self.max_gen_multiplier,
                         max_stall_gen_multiplier=self.max_stall_gen_multiplier) if self.ga else ""
         except Exception as e:
+            self.close_dialog("calculating_dialog")
             self.show_dialog("Помилка",
-                             "Помилка обробки. Перевірте введені дані або зверніться до адміністратора",
+                             "Помилка обробки. Перевірте вхідні дані або зверніться до адміністратора",
                              self.calculate_center_position(300, 100))
             print(e)
             return
