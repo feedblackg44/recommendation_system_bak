@@ -487,10 +487,11 @@ class App(ctk.CTk):
     def perform_calculation(self, file_path, number):
         try:
             self.min_budget, self.max_budget = self.ga.precalculate(file_path, number) if self.ga else (0, 100)
-            # self.min_budget = 0; self.max_budget = 100
         except Exception as e:
-            self.show_dialog("Помилка", f"Помилка: {str(e)}",
+            self.show_dialog("Помилка",
+                             f"Помилка обробки.\nПеревірте введені дані\nабо зверніться до адміністратора",
                              self.calculate_center_position(300, 100))
+            print(e)
             return
 
         self.move_forward()
@@ -617,7 +618,7 @@ class App(ctk.CTk):
                 budget_entry = self.second_page.get('mode', {}).get("max_budget_entry")
                 max_budget = float(budget_entry.get()) if budget_entry and self.ga else 100
                 if not max_budget:
-                    raise ValueError
+                    raise ValueError("Заповніть поле бюджету")
                 elif max_budget < self.min_budget:
                     max_budget = self.min_budget
                 elif max_budget > self.max_budget:
@@ -690,8 +691,10 @@ class App(ctk.CTk):
                         pop_multiplier=self.pop_multiplier, max_gen_multiplier=self.max_gen_multiplier,
                         max_stall_gen_multiplier=self.max_stall_gen_multiplier) if self.ga else ""
         except Exception as e:
-            self.show_dialog("Помилка", f"Помилка: {str(e)}",
+            self.show_dialog("Помилка",
+                             "Помилка обробки.\nПеревірте введені дані\nабо зверніться до адміністратора",
                              self.calculate_center_position(300, 100))
+            print(e)
 
         self.show_final_results()
 
