@@ -174,7 +174,7 @@ class App(ctk.CTk):
         dialog.transient(self)
         dialog.configure(fg_color=BACKGROUND_COLOR)
 
-        label = ctk.CTkLabel(dialog, text="Ви впевнені,\nщо хочете вийти?", text_color=TEXT_COLOR, font=(FONT_BODY, 20))
+        label = ctk.CTkLabel(dialog, text="Ви впевнені, що хочете вийти?", text_color=TEXT_COLOR, font=(FONT_BODY, 20))
         label.pack(expand=True, padx=10, pady=10)
 
         yes_button = ctk.CTkButton(dialog, text="Так", command=self.quit, fg_color=VIOLET_DARK, text_color=WHITE_COLOR,
@@ -262,6 +262,9 @@ class App(ctk.CTk):
         return frame, label, entry
 
     def show_settings(self):
+        if self.settings_button.cget("state") == "disabled":
+            return
+
         settings = ctk.CTkToplevel(self)
         settings.title("Налаштування")
         settings.geometry(self.calculate_center_position(600, 440))
@@ -431,14 +434,14 @@ class App(ctk.CTk):
 
         return f"{width}x{height}+{dialog_x}+{dialog_y}"
 
-    def show_dialog(self, title, message, geometry):
+    def show_dialog(self, title, message, geometry, wraplength=270):
         dialog = ctk.CTkToplevel(self)
         dialog.title(title)
         dialog.geometry(geometry)
         dialog.transient(self)
         dialog.configure(fg_color=BACKGROUND_COLOR)
 
-        label = ctk.CTkLabel(dialog, text=message, text_color=TEXT_COLOR, font=(FONT_BODY, 20))
+        label = ctk.CTkLabel(dialog, text=message, text_color=TEXT_COLOR, font=(FONT_BODY, 20), wraplength=wraplength)
         label.pack(expand=True, padx=10, pady=10)
 
         dialog.grab_set()
@@ -476,16 +479,15 @@ class App(ctk.CTk):
             if number <= 0:
                 raise ValueError
             if self.selected_file_path or not self.ga:
-                self.toggle_buttons_state("disabled")
                 self.first_page["calculating_dialog"] = self.show_dialog("Розрахунок бюджету",
-                                                                         "Виконується\nрозрахунок\nбюджету...",
+                                                                         "Виконується розрахунок бюджету...",
                                                                          self.calculate_center_position(300, 100))
                 threading.Thread(target=self.perform_calculation, args=(self.selected_file_path, number)).start()
             else:
                 self.show_dialog("Помилка", "Оберіть файл",
                                  self.calculate_center_position(300, 100))
         except ValueError:
-            self.show_dialog("Помилка", "Введіть коректний\nперіод замовлення",
+            self.show_dialog("Помилка", "Введіть коректний період замовлення",
                              self.calculate_center_position(300, 100))
 
     def perform_calculation(self, file_path, number):
@@ -493,7 +495,7 @@ class App(ctk.CTk):
             self.min_budget, self.max_budget = self.ga.precalculate(file_path, number) if self.ga else (0, 100)
         except Exception as e:
             self.show_dialog("Помилка",
-                             f"Помилка обробки.\nПеревірте введені дані\nабо зверніться до адміністратора",
+                             f"Помилка обробки. Перевірте введені дані або зверніться до адміністратора",
                              self.calculate_center_position(300, 100))
             print(e)
             return
@@ -502,7 +504,6 @@ class App(ctk.CTk):
 
     def show_budget_input(self):
         self.close_dialog("calculating_dialog")
-        self.toggle_buttons_state("normal")
         self.clear_window()
 
         mode_frame = self.get_helpful_frame(pady=(10, 0))
@@ -516,8 +517,11 @@ class App(ctk.CTk):
         mode_button1.pack(side="left", padx=(30, 0))
         mode_button2 = ctk.CTkButton(budget_mode_frame, text="Кілька рішень", text_color=WHITE_COLOR,
                                      font=(FONT_BUTTONS, 22), height=50, width=265, fg_color=VIOLET_DARK,
-                                     command=lambda: self.update_budget_input(False))
+                                     command=lambda: self.update_budget_input(False)
+                                     if self.min_budget < self.max_budget else None)
         mode_button2.pack(side="left", padx=(10, 30))
+        if self.min_budget == self.max_budget:
+            mode_button2.configure(state="disabled")
 
         result_frame = self.get_helpful_frame(pady=(10, 0))
         result_label = ctk.CTkLabel(result_frame, text=f"Мінімальний бюджет: {self.min_budget}$\n"
@@ -617,16 +621,23 @@ class App(ctk.CTk):
         self.second_page['mode']['run_algorithm_button'] = run_algorithm_button
 
     def run_algorithm(self):
+        self.solved = False
+
         try:
             if self.budget_mode_single:
                 budget_entry = self.second_page.get('mode', {}).get("max_budget_entry")
-                max_budget = float(budget_entry.get()) if budget_entry and self.ga else 100
+                try:
+                    max_budget = float(budget_entry.get()) if budget_entry and self.ga else 100
+                except ValueError:
+                    raise ValueError("Введіть коректний бюджет")
                 if not max_budget:
                     raise ValueError("Заповніть поле бюджету")
+                elif max_budget < 0:
+                    raise ValueError("Бюджет повинен бути додатнім числом")
                 elif max_budget < self.min_budget:
-                    max_budget = self.min_budget
+                    raise ValueError("Бюджет повинен бути більшим за мінімальний бюджет")
                 elif max_budget > self.max_budget:
-                    max_budget = self.max_budget
+                    raise ValueError("Бюджет повинен бути меншим за максимальний бюджет")
                 min_budget = 0
                 step = 0
                 single = True
@@ -634,9 +645,18 @@ class App(ctk.CTk):
                 min_budget_entry = self.second_page.get('mode', {}).get("min_budget_entry")
                 max_budget_entry = self.second_page.get('mode', {}).get("max_budget_entry")
                 step_budget_entry = self.second_page.get('mode', {}).get("step_budget_entry")
-                min_budget = float(min_budget_entry.get()) if min_budget_entry and self.ga else 0
-                max_budget = float(max_budget_entry.get()) if max_budget_entry and self.ga else 100
-                step = float(step_budget_entry.get()) if step_budget_entry and self.ga else 0
+                try:
+                    min_budget = float(min_budget_entry.get()) if min_budget_entry and self.ga else 0
+                except ValueError:
+                    raise ValueError("Введіть коректний мінімальний бюджет")
+                try:
+                    max_budget = float(max_budget_entry.get()) if max_budget_entry and self.ga else 100
+                except ValueError:
+                    raise ValueError("Введіть коректний максимальний бюджет")
+                try:
+                    step = float(step_budget_entry.get()) if step_budget_entry and self.ga else 0
+                except ValueError:
+                    raise ValueError("Введіть коректний крок")
                 if not min_budget or not max_budget or not step:
                     raise ValueError("Заповніть всі поля")
                 elif step < 0:
@@ -646,18 +666,17 @@ class App(ctk.CTk):
                 elif min_budget > max_budget:
                     raise ValueError("Мінімальний бюджет повинен бути меншим за максимальний")
                 if min_budget < self.min_budget:
-                    min_budget = self.min_budget
+                    raise ValueError("Мінімальний бюджет повинен бути більшим за мінімальний бюджет")
                 if max_budget > self.max_budget:
-                    max_budget = self.max_budget
+                    raise ValueError("Максимальний бюджет повинен бути меншим за максимальний бюджет")
                 single = False
 
             self.move_forward(max_budget, min_budget, step, single)
         except ValueError as e:
             self.show_dialog("Помилка", f"Помилка: {str(e)}",
-                             self.calculate_center_position(300, 100))
+                             self.calculate_center_position(400, 200), wraplength=370)
 
     def show_algorithm_page(self, max_budget, min_budget, step, single):
-        self.toggle_buttons_state("normal")
         self.clear_window()
 
         alg_frame = self.get_helpful_frame(pady=(20, 0))
@@ -696,9 +715,10 @@ class App(ctk.CTk):
                         max_stall_gen_multiplier=self.max_stall_gen_multiplier) if self.ga else ""
         except Exception as e:
             self.show_dialog("Помилка",
-                             "Помилка обробки.\nПеревірте введені дані\nабо зверніться до адміністратора",
+                             "Помилка обробки. Перевірте введені дані або зверніться до адміністратора",
                              self.calculate_center_position(300, 100))
             print(e)
+            return
 
         self.show_final_results()
 
@@ -749,31 +769,31 @@ class App(ctk.CTk):
             self.third_page["graph_window"] = graph_window
         else:
             save_button = ctk.CTkButton(self, text="Зберегти рішення",
-                                        command=self.save_one_solution, fg_color=VIOLET_DARK,
+                                        command=lambda: self.save_one_solution(single=True), fg_color=VIOLET_DARK,
                                         text_color=WHITE_COLOR, font=(FONT_BUTTONS, 32),
                                         border_width=0, height=50)
             save_button.pack(side="top", padx=30, pady=(10, 25), fill="x")
 
             self.third_page["save_button"] = save_button
 
-    def save_one_solution(self):
+    def save_one_solution(self, single=False):
         if budget_entry := self.third_page.get("budget_entry"):
             budget = float(budget_entry.get())
         else:
             budget = None
 
         if self.ga:
-            if budget and budget in self.ga.budgets:
+            if budget and budget in self.ga.budgets or single:
                 selected_dir = askdirectory(
                     title="Оберіть папку для збереження",
                     initialdir=self.current_path
                 )
                 if selected_dir:
-                    self.ga.save_solution(selected_dir, budget)
-                    self.show_dialog("Рішення збережено", "Рішення збережено\nуспішно",
+                    self.ga.save_solution(selected_dir, budget if not single else None)
+                    self.show_dialog("Рішення збережено", "Рішення збережено успішно",
                                      self.calculate_center_position(300, 100))
             else:
-                self.show_dialog("Помилка", "Введіть коректний\nбюджет",
+                self.show_dialog("Помилка", "Введіть коректний бюджет",
                                  self.calculate_center_position(300, 100))
 
     def save_all_solutions(self):
@@ -784,7 +804,7 @@ class App(ctk.CTk):
 
         if selected_dir and self.ga:
             self.ga.save_solution(selected_dir)
-            self.show_dialog("Рішення збережено", "Рішення збережені\nуспішно",
+            self.show_dialog("Рішення збережено", "Рішення збережені успішно",
                              self.calculate_center_position(300, 100))
 
     def toggle_buttons_state(self, state):

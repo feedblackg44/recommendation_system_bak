@@ -37,7 +37,7 @@ class GeneticAlgorithm:
         self._max_budget = None
         self._min_budget = None
         self._num_cores = psutil.cpu_count(logical=False)
-        self._temp_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'temp')
+        self._temp_dir = os.path.join(os.getcwd(), 'temp')
         if os.path.exists(self._temp_dir):
             shutil.rmtree(self._temp_dir)
         os.makedirs(self._temp_dir)
@@ -56,7 +56,9 @@ class GeneticAlgorithm:
 
     @property
     def solutions_amount(self):
-        return len(self._solution.get('fbests', {}))
+        if self._solution:
+            return len(self._solution.get('fbests', {}))
+        return 0
 
     @property
     def max_investment_period(self):
@@ -72,11 +74,15 @@ class GeneticAlgorithm:
 
     @property
     def budgets(self):
-        return list(self._solution.get('fbests', {}).keys())
+        if self._solution:
+            return list(self._solution.get('fbests', {}).keys())
+        return []
 
     @property
     def profits(self):
-        return list(self._solution.get('fbests', {}).values())
+        if self._solution:
+            return list(self._solution.get('fbests', {}).values())
+        return []
 
     def precalculate(self, selected_file, max_investment_period):
         self.selected_file = selected_file
@@ -115,6 +121,7 @@ class GeneticAlgorithm:
             nargout=6
         )
 
+        xbest = [i for i in xbest[0]] if not isinstance(xbest, float) else [xbest]
         total_budget = math.ceil(total_budget)
         deals_variants = self._eng.MapToJson(deals_variants, nargout=1)
         deals_variants = json.loads(deals_variants)
@@ -124,8 +131,8 @@ class GeneticAlgorithm:
 
         if self._temp_dir:
             solution = {
-                'xbest': xbest,
-                'fbest': fbest,
+                'xbests': {total_budget: xbest},
+                'fbests': {total_budget: -fbest},
                 'deals_variants': deals_variants,
                 'check_ub': check_ub
             }
@@ -145,7 +152,7 @@ class GeneticAlgorithm:
         self._start_par_pool()
 
         if (single and len(self._lb)) or not len(self._lb):
-            print(f"Running for {max_budget}$...")
+            print(f"Виконується для {max_budget}$...")
 
             xbest, fbest, total_budget, deals_variants, check_ub, order = self._matlab_main_func(
                 matlab_map_order,
@@ -157,19 +164,22 @@ class GeneticAlgorithm:
                 *args
             )
 
-            xbest = [i for i in xbest[0]] if not isinstance(xbest, float) else [xbest]
+            if not self._lb:
+                print("Немає змінних для пошуку рішення")
 
             xbests[total_budget] = xbest
             fbests[total_budget] = -fbest
+
+            print(f"Завершено для {max_budget}$ з прибутком: {fbest}$")
         else:
-            print(f"Running for {min_budget}-{max_budget}$ with step={step}...")
+            print(f"Виконується для {min_budget}-{max_budget}$ з кроком={step}...")
             deals_variants = None
             check_ub = [[None]]
             order = None
             budget_range = list(np.arange(min_budget, max_budget, step))
             budget_range.append(max_budget)
             for budget in budget_range:
-                print(f"Running for {budget}$...")
+                print(f"Виконується для {budget}$...")
 
                 xbest, fbest, total_budget, deals_variants, check_ub, order = self._matlab_main_func(
                     matlab_map_order,
@@ -183,11 +193,9 @@ class GeneticAlgorithm:
 
                 last_key = list(fbests.keys())[-1] if fbests else None
                 if not last_key or (last_key and fbests[last_key] != -fbest):
-                    xbest = [i for i in xbest[0]] if not isinstance(xbest, float) else [xbest]
-
                     xbests[total_budget] = xbest
                     fbests[total_budget] = -fbest
-                print(f"Finished for {budget}$ with Profit: {fbest}$")
+                print(f"Завершено для {budget}$ з прибутком: {fbest}$")
 
         self._stop_par_pool()
 
