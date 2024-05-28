@@ -274,7 +274,7 @@ class App(ctk.CTk):
 
         pop_frame, pop_label, pop_entry = self.create_beautiful_entry(
             settings,
-            "Множник кількості популяцій:",
+            "Множник розміру популяції:",
             (FONT_BODY, 26),
             (FONT_BODY, 22),
             pady=(20, 0))
@@ -783,13 +783,16 @@ class App(ctk.CTk):
             self.third_page["save_button"] = save_button
 
     def save_one_solution(self, single=False):
-        if budget_entry := self.third_page.get("budget_entry"):
-            budget = float(budget_entry.get())
-        else:
+        try:
+            if budget_entry := self.third_page.get("budget_entry"):
+                budget = float(budget_entry.get())
+            else:
+                budget = None
+        except ValueError:
             budget = None
 
         if self.ga:
-            if budget and budget in self.ga.budgets or single:
+            if (budget and budget in self.ga.budgets) or single:
                 selected_dir = askdirectory(
                     title="Оберіть папку для збереження",
                     initialdir=self.current_path

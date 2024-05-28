@@ -6,9 +6,10 @@ import pandas as pd
 
 def generate_random_name():
     parts = ['Pro', 'Max', 'Tech', 'Data', 'Net', 'Core', 'Flex', 'Ultra', 'Nano', 'Smart', 'Alpha', 'Mega', 'Mini',
-             'Hyper', 'Super']
+             'Hyper', 'Super', 'Micro', 'Eco', 'Power', 'Speed', 'Multi', 'True', 'Fast', 'Quick', 'Easy', 'Gold',
+             'Silver', 'Platinum', 'Diamond', 'Titan', 'Titanium', 'Steel', 'Iron', 'Metal', 'Alloy', 'Carbon', 'Graph']
     suffix = ['drive', 'wave', 'ware', 'link', 'byte', 'deck', 'box', 'sphere', 'grid', 'works', 'port', 'scan',
-              'motion', 'frame', 'track']
+              'motion', 'frame', 'track', 'line', 'point', 'net', 'web', 'hub', 'port', 'core', 'tech', 'ware', 'ware']
     return random.choice(parts) + random.choice(suffix)
 
 
@@ -113,9 +114,9 @@ def convert_order_to_excel_rows(order):
 
 
 def main():
-    order = generate_deals(30, 10)
+    order = generate_deals(10, 5)
     df = convert_order_to_excel_rows(order)
-    df.to_excel('data.xlsx', index=False)
+    df.to_excel('data_10.xlsx', index=False)
 
 
 if __name__ == '__main__':

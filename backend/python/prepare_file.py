@@ -42,7 +42,7 @@ def main(file_name=None):
 
     data = data.groupby('Deal ID').filter(lambda x: x['System Suggested Quantity'].sum() != 0)
 
-    sorted_data = data.sort_values(by=['Deal ID', 'Item No', 'Minimum Order Quantity'])
+    sorted_data = data.sort_values(by=['Deal ID', 'Item No', 'Minimum Order Quantity']).reset_index(drop=True)
 
     wb.close()
 
